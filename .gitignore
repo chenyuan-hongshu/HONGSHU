@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# 模型文件（太大，不上传）
+output/models/*.pkl
+
+# 输出的CSV数据文件（太大，不上传）
+output/*.csv
+output/*.txt
+
+# CatBoost训练日志
+catboost_info/
+
+# Qwen模型（太大，自动下载）
+qwen_model/
+
+# 根目录的数据文件（太大，不上传，用户自行运行脚本生成）
+*.csv
+*.pkl
+
+# 原始数据集（太大，不上传）
+原始数据集/
+
+# 临时文件
+~$*
+*.tmp
+*.bak

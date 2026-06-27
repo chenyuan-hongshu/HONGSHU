@@ -1,0 +1,59 @@
+# 糖尿病患病风险智能预测系统
+
+基于CDC BRFSS 2015数据集，使用CatBoost + SHAP + Qwen2.5大语言模型构建的糖尿病风险预测与AI健康对话系统。
+
+## 快速开始
+
+```bash
+# 1. 安装依赖
+pip install flask pandas numpy scikit-learn catboost shap matplotlib torch transformers accelerate
+
+# 2. 依次运行脚本生成模型和数据
+python 数据加载与预处理.py
+python 探索性数据分析.py
+python 模型训练.py
+python 模型调优.py
+
+# 3. 启动Web系统
+cd 可视化
+python app.py
+```
+
+浏览器打开 http://localhost:5000
+
+## 项目结构
+
+```
+糖尿病风险预测系统/
+├── 数据加载与预处理.py      # 数据清洗、特征工程
+├── 探索性数据分析.py        # EDA分析、生成图表
+├── 模型训练.py              # 7种模型训练对比
+├── 模型调优.py              # 不平衡处理、调参、SHAP
+├── 原始数据集/              # BRFSS 2015原始数据
+├── output/                  # 模型文件、图表、评估结果
+├── 可视化/                  # Flask Web应用
+│   ├── app.py
+│   └── templates/index.html
+└── 提交材料/                # 实验报告、数据说明文档
+```
+
+## 功能模块
+
+- **风险预测**：填写21个健康指标，获取患病风险评估和AI健康建议
+- **描述性分析**：9张EDA图表+文字分析
+- **模型对比**：7种模型性能对比、ROC/PR曲线、混淆矩阵
+- **模型调优**：不平衡处理、参数调优、SHAP可解释性分析
+
+## 模型性能
+
+| 模型 | AUC | 召回率 |
+|------|-----|--------|
+| CatBoost（最终） | 0.8192 | 0.7965 |
+| XGBoost | 0.8148 | 0.7788 |
+| LightGBM | 0.8168 | 0.7886 |
+
+## 说明
+
+- 首次运行会自动下载Qwen模型（约3.6GB），可选择跳过
+- 预测功能不需要Qwen模型，可独立运行
+- 所有路径使用相对路径，clone后可直接运行

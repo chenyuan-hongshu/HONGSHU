@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>糖尿病患病风险智能筛查系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', sans-serif; background: #f5f7fa; color: #333; display: flex; min-height: 100vh; }
+        .sidebar { width: 200px; min-height: 100vh; background: #fff; padding: 30px 0; position: fixed; left: 0; top: 0; z-index: 100; display: flex; flex-direction: column; border-right: 1px solid #e5e9f0; }
+        .sidebar .logo { text-align: center; margin-bottom: 35px; padding: 0 15px; }
+        .sidebar .logo h1 { font-size: 14px; font-weight: 700; color: #1a3c5e; line-height: 1.5; }
+        .sidebar .logo p { font-size: 10px; color: #94a3b8; margin-top: 5px; }
+        .nav-list { list-style: none; flex: 1; padding: 0 10px; }
+        .nav-item { padding: 11px 18px; margin: 2px 0; border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; color: #64748b; }
+        .nav-item:hover { background: #f1f5f9; color: #1a3c5e; }
+        .nav-item.active { background: #e0ecf8; color: #1a3c5e; font-weight: 600; }
+        .sidebar .footer { text-align: center; font-size: 10px; color: #b0bec5; margin-top: 20px; padding: 15px 15px 0; border-top: 1px solid #e5e9f0; }
+        .main { margin-left: 200px; flex: 1; padding: 25px 35px; }
+        .page-header { background: #fff; border-radius: 10px; padding: 20px 25px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid #e5e9f0; display: flex; align-items: center; justify-content: space-between; }
+        .page-header h2 { font-size: 18px; color: #1a3c5e; }
+        .badges { display: flex; gap: 10px; }
+        .badge { padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+        .badge-blue { background: #eff6ff; color: #1d4ed8; }
+        .badge-green { background: #f0fdf4; color: #15803d; }
+        .badge-orange { background: #fff7ed; color: #c2410c; }
+        .card { background: #fff; border-radius: 10px; padding: 22px 25px; margin-bottom: 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid #e5e9f0; }
+        .card h3 { font-size: 15px; color: #1a3c5e; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #e5e9f0; }
+        .card-row { display: grid; gap: 18px; }
+        .card-row.cols-2 { grid-template-columns: 1fr 1fr; }
+        .form-section h4 { font-size: 12px; color: #94a3b8; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 12px; color: #64748b; margin-bottom: 3px; }
+        .form-group select, .form-group input[type=number] { padding: 7px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; background: #fff; }
+        .form-group select:focus, .form-group input:focus { border-color: #3b82f6; outline: none; }
+        .range-group { display: flex; align-items: center; gap: 8px; }
+        .range-group input[type=range] { flex: 1; accent-color: #3b82f6; }
+        .range-group .rv { font-size: 13px; font-weight: 600; color: #1a3c5e; min-width: 22px; text-align: center; }
+        .btn-primary { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #3b82f6; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary:hover { background: #2563eb; }
+        .result-area { display: none; }
+        .result-area.show { display: block; }
+        .prob-bar { width: 100%; height: 10px; background: #e5e7eb; border-radius: 5px; overflow: hidden; margin: 12px 0; }
+        .prob-fill { height: 100%; border-radius: 5px; transition: width 0.5s; }
+        .prob-num { font-size: 42px; font-weight: 800; text-align: center; margin: 8px 0; }
+        .risk-tag { display: inline-block; padding: 6px 22px; border-radius: 20px; font-size: 15px; font-weight: 600; color: #fff; }
+        .advice { padding: 12px 16px; border-radius: 6px; font-size: 13px; line-height: 1.6; margin-top: 12px; }
+        .adv-low { background: #f0fdf4; border-left: 3px solid #22c55e; color: #166534; }
+        .adv-mid { background: #fffbeb; border-left: 3px solid #f59e0b; color: #92400e; }
+        .adv-high { background: #fef2f2; border-left: 3px solid #ef4444; color: #991b1b; }
+        .shap-img { text-align: center; }
+        .shap-img img { max-width: 100%; border-radius: 6px; }
+        .top5-item { display: flex; align-items: center; padding: 9px 14px; margin: 4px 0; background: #f8fafc; border-radius: 6px; font-size: 13px; border: 1px solid #e5e9f0; }
+        .top5-item .rk { width: 24px; height: 24px; border-radius: 50%; background: #3b82f6; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 11px; margin-right: 10px; }
+        .top5-item .nm { flex: 1; }
+        .top5-item .vl { font-weight: 600; min-width: 70px; text-align: right; }
+        .top5-item .dr { font-size: 11px; margin-left: 8px; }
+        .shap-up { color: #dc2626; }
+        .shap-down { color: #16a34a; }
+        .chart-img { width: 100%; border-radius: 6px; }
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .chart-center { max-width: 650px; margin: 0 auto; }
+        .dt { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .dt th { background: #f1f5f9; color: #1a3c5e; padding: 9px 10px; text-align: center; font-weight: 600; border-bottom: 2px solid #e2e8f0; }
+        .dt td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; text-align: center; }
+        .dt tr:hover { background: #f8fafc; }
+        .tip { background: #f0f7ff; border-left: 3px solid #3b82f6; padding: 11px 16px; border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 13px; color: #475569; line-height: 1.7; }
+        .step { display: flex; gap: 14px; padding: 12px; background: #f8fafc; border-radius: 8px; margin: 6px 0; border: 1px solid #e5e9f0; }
+        .step-n { width: 30px; height: 30px; background: #3b82f6; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 12px; flex-shrink: 0; }
+        .step-t { font-size: 13px; line-height: 1.6; color: #475569; }
+        .page { display: none; }
+        .page.active { display: block; }
+        .sec-title { font-size: 14px; color: #64748b; margin-bottom: 12px; font-weight: 500; }
+        .analysis { font-size: 13px; color: #475569; line-height: 1.8; margin: 10px 0; }
+        .analysis b { color: #1a3c5e; }
+        .analysis ul { margin-left: 18px; margin: 6px 0; }
+        .analysis li { margin: 3px 0; }
+        .highlight { background: #fffbeb; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+        .stat-row { display: flex; gap: 15px; margin: 10px 0; flex-wrap: wrap; }
+        .stat-box { background: #f8fafc; border: 1px solid #e5e9f0; border-radius: 6px; padding: 10px 16px; text-align: center; min-width: 100px; }
+        .stat-box .sv { font-size: 20px; font-weight: 700; color: #1a3c5e; }
+        .stat-box .sl { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+
+        /* 聊天样式 */
+        .chat-area {
+            background: #f0f2f5; border-radius: 10px; padding: 20px;
+            min-height: 300px; max-height: 500px; overflow-y: auto;
+            border: 1px solid #e5e9f0; margin-bottom: 12px;
+        }
+        .chat-welcome { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+        .chat-avatar-left {
+            width: 36px; height: 36px; border-radius: 50%; background: #3b82f6;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
+        }
+        .chat-avatar-right {
+            width: 36px; height: 36px; border-radius: 50%; background: #22c55e;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; flex-shrink: 0; color: #fff; font-weight: 600;
+        }
+        .chat-bubble-left {
+            background: #fff; padding: 12px 16px; border-radius: 0 12px 12px 12px;
+            font-size: 13px; line-height: 1.7; color: #333; max-width: 80%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .chat-bubble-right {
+            background: #3b82f6; color: #fff; padding: 12px 16px;
+            border-radius: 12px 0 12px 12px; font-size: 13px; line-height: 1.7;
+            max-width: 80%; margin-left: auto; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .chat-row-left { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+        .chat-row-right { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 12px; justify-content: flex-end; }
+        .chat-result-card {
+            background: #fff; padding: 16px; border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06); min-width: 320px;
+        }
+        .chat-result-card .cr-prob { font-size: 32px; font-weight: 800; text-align: center; margin: 6px 0; }
+        .chat-result-card .cr-bar { width: 100%; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+        .chat-result-card .cr-fill { height: 100%; border-radius: 4px; }
+        .chat-result-card .cr-tag { display: inline-block; padding: 4px 16px; border-radius: 16px; font-size: 13px; font-weight: 600; color: #fff; }
+        .chat-result-card .cr-advice { margin-top: 10px; padding: 10px 12px; border-radius: 6px; font-size: 12px; line-height: 1.6; }
+        .chat-result-card .cr-top5 { margin-top: 10px; border-top: 1px solid #e5e9f0; padding-top: 10px; }
+        .chat-result-card .cr-top5-item { display: flex; align-items: center; padding: 4px 0; font-size: 12px; }
+        .chat-result-card .cr-top5-item .cr-rk { width: 18px; height: 18px; border-radius: 50%; background: #3b82f6; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; margin-right: 8px; }
+        .chat-input-bar {
+            display: flex; gap: 10px; align-items: center;
+            background: #fff; border-radius: 10px; padding: 12px 16px;
+            border: 1px solid #e5e9f0;
+        }
+        .chat-input-btn {
+            padding: 10px 28px; border-radius: 8px; background: #3b82f6;
+            color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+            white-space: nowrap; transition: all 0.2s;
+        }
+        .chat-input-btn:hover { background: #2563eb; }
+        .chat-input-btn:active { transform: scale(0.97); }
+        .chat-typing { display: flex; gap: 4px; padding: 8px 0; }
+        .chat-typing span { width: 6px; height: 6px; border-radius: 50%; background: #94a3b8; animation: typing 1.2s infinite; }
+        .chat-typing span:nth-child(2) { animation-delay: 0.2s; }
+        .chat-typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typing { 0%,60%,100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-4px); } }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="logo">
+        <h1>糖尿病风险<br>智能筛查系统</h1>
+        <p>CDC BRFSS 2015</p>
+    </div>
+    <ul class="nav-list">
+        <li class="nav-item active" onclick="showPage('p1')">风险预测</li>
+        <li class="nav-item" onclick="showPage('p2')">描述性分析</li>
+        <li class="nav-item" onclick="showPage('p3')">模型对比</li>
+        <li class="nav-item" onclick="showPage('p4')">模型调优</li>
+    </ul>
+    <div class="footer">仅提供健康参考<br>不可替代医生诊断</div>
+</div>
+
+<div class="main">
+
+<!-- ==================== P1 风险预测 ==================== -->
+<div class="page active" id="p1">
+    <!-- 指标录入区 -->
+    <div class="card" style="margin-bottom:15px;">
+        <h3>健康指标录入</h3>
+        <div class="card-row cols-2">
+            <div>
+                <div class="form-section">
+                    <h4>病史与生活习惯</h4>
+                    <div class="form-grid">
+                        <div class="form-group"><label>是否有高血压</label><select id="HighBP"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否有高胆固醇</label><select id="HighChol"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>5年内是否做过胆固醇检查</label><select id="CholCheck"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否吸烟</label><select id="Smoker"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否曾患中风</label><select id="Stroke"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否有心脏病</label><select id="HeartDiseaseorAttack"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否规律运动</label><select id="PhysActivity"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否每天吃水果</label><select id="Fruits"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否每天吃蔬菜</label><select id="Veggies"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否重度饮酒</label><select id="HvyAlcoholConsump"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否有医疗保险</label><select id="AnyHealthcare"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否因费用看不起病</label><select id="NoDocbcCost"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>是否有行走困难</label><select id="DiffWalk"><option value="0">否</option><option value="1">是</option></select></div>
+                        <div class="form-group"><label>性别</label><select id="Sex"><option value="0">女</option><option value="1">男</option></select></div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="form-section">
+                    <h4>个人情况</h4>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <div class="form-group">
+                            <label>年龄段</label>
+                            <select id="Age">
+                                <option value="1">18-24岁</option><option value="2">25-29岁</option><option value="3">30-34岁</option>
+                                <option value="4">35-39岁</option><option value="5">40-44岁</option><option value="6">45-49岁</option>
+                                <option value="7">50-54岁</option><option value="8">55-59岁</option><option value="9" selected>60-64岁</option>
+                                <option value="10">65-69岁</option><option value="11">70-74岁</option><option value="12">75-79岁</option>
+                                <option value="13">80岁及以上</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>自评健康状况</label>
+                            <select id="GenHlth">
+                                <option value="1">优秀</option><option value="2">非常好</option><option value="3" selected>好</option>
+                                <option value="4">一般</option><option value="5">差</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>过去30天心理不健康天数</label><div class="range-group"><input type="range" id="MentHlth" min="0" max="30" value="0" oninput="this.nextElementSibling.textContent=this.value"><span class="rv">0</span></div></div>
+                        <div class="form-group"><label>过去30天身体不健康天数</label><div class="range-group"><input type="range" id="PhysHlth" min="0" max="30" value="0" oninput="this.nextElementSibling.textContent=this.value"><span class="rv">0</span></div></div>
+                        <div class="form-group">
+                            <label>学历</label>
+                            <select id="Education">
+                                <option value="1">从未上学</option><option value="2">小学</option><option value="3">初中</option>
+                                <option value="4">高中</option><option value="5">大专/本科</option><option value="6">研究生及以上</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>家庭年收入</label>
+                            <select id="Income">
+                                <option value="1">不到1万元</option><option value="2">1-2万元</option><option value="3">2-3万元</option>
+                                <option value="4">3-5万元</option><option value="5">5-10万元</option><option value="6">10-20万元</option>
+                                <option value="7">20-50万元</option><option value="8">50万元以上</option>
+                            </select>
+                        </div>
+                        <div class="form-group"><label>BMI 身体质量指数</label><input type="number" id="BMI" min="15" max="50" value="25" step="0.1" placeholder="18.5~24.9为正常"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 聊天区域 -->
+    <div class="chat-area" id="chatArea">
+        <div class="chat-welcome">
+            <div class="chat-avatar-left">🤖</div>
+            <div class="chat-bubble-left">
+                您好，我是糖尿病风险评估助手"糖糖"。请在上方填写您的健康指标，然后点击「计算风险」按钮获取评估结果。之后您可以向我提问任何健康相关问题，我会基于您的评估结果给出个性化建议。
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部输入栏 -->
+    <div class="chat-input-bar">
+        <div class="chat-input-btn" onclick="predict()">计算风险</div>
+        <input type="text" id="chatInput" placeholder="评估完成后，可以向我提问健康问题..." style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;" onkeydown="if(event.key==='Enter')sendChat()">
+        <div class="chat-input-btn" onclick="sendChat()" style="background:#22c55e;">发送</div>
+    </div>
+</div>
+
+<!-- ==================== P2 描述性分析 ==================== -->
+<div class="page" id="p2">
+    <div class="page-header"><h2>描述性分析</h2></div>
+
+    <!-- 数据概况 -->
+    <div class="card">
+        <h3>一、数据概况</h3>
+        <div class="stat-row">
+            <div class="stat-box"><div class="sv">229,474</div><div class="sl">总样本量</div></div>
+            <div class="stat-box"><div class="sv">21</div><div class="sl">特征数量</div></div>
+            <div class="stat-box"><div class="sv">15.29%</div><div class="sl">基线患病率</div></div>
+            <div class="stat-box"><div class="sv">1:6</div><div class="sl">正负样本比</div></div>
+        </div>
+        <div class="analysis">
+            <p>本数据集来源于美国CDC的BRFSS 2015年调查，共包含 <b>229,474</b> 条匿名健康记录。目标变量为二分类（是否患有糖尿病），其中正样本（患病）占比 <span class="highlight">15.29%</span>，属于典型的<b>类别不平衡</b>数据集。</p>
+            <p>特征涵盖四大类：慢性病史（高血压、高胆固醇、中风、心脏病）、生活方式（吸烟、运动、饮食、饮酒）、健康状况（BMI、自评健康、心理健康、身体健康）、社会经济（年龄、性别、教育、收入）。</p>
+        </div>
+    </div>
+
+    <!-- 人口学特征 -->
+    <div class="card">
+        <h3>二、人口学特征分析</h3>
+        <div class="card-row cols-2">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda01 }}"></div>
+            <div>
+                <div class="analysis">
+                    <p><b>年龄与患病率：</b>患病率随年龄增长呈显著上升趋势。18-24岁组患病率不足5%，而80岁以上组超过30%。<span class="highlight">60岁是关键分水岭</span>，此后患病风险急剧增加。</p>
+                    <p><b>干预启示：</b>应将60岁以上人群列为重点筛查对象，建议每年至少进行一次血糖检测。</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-row cols-2" style="margin-top:18px;">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda02 }}"></div>
+            <div>
+                <div class="analysis">
+                    <p><b>性别差异：</b>男性患病率略高于女性，但差异不算悬殊。这可能与男性群体中吸烟率更高、运动比例更低有关。</p>
+                    <p><b>结论：</b>性别不是糖尿病的决定性因素，但男性群体需额外关注生活方式管理。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 健康指标 -->
+    <div class="card">
+        <h3>三、健康指标分析</h3>
+        <div class="card-row cols-2">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda03 }}"></div>
+            <div>
+                <div class="analysis">
+                    <p><b>BMI分布：</b>糖尿病患者的BMI分布整体向高值偏移。未患病人群BMI集中在22-28区间，而患病人群在30-35区间有明显聚集。</p>
+                    <p><b>关键阈值：</b>BMI≥30（肥胖标准）是重要的风险分界线。肥胖人群的患病率是正常体重人群的 <span class="highlight">2-3倍</span>。</p>
+                    <p><b>建议：</b>将BMI控制在25以下可显著降低患病风险。</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-row cols-2" style="margin-top:18px;">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda04 }}"></div>
+            <div>
+                <div class="analysis">
+                    <p><b>高血压：</b>有高血压人群的患病率约为无高血压人群的 <span class="highlight">2.5倍</span>。高血压与糖尿病存在共同的病理基础（胰岛素抵抗），两者常常互为因果。</p>
+                    <p><b>高胆固醇：</b>高胆固醇人群患病率同样显著更高。胆固醇代谢异常与糖代谢紊乱密切相关。</p>
+                    <p><b>结论：</b>高血压和高胆固醇是糖尿病最重要的独立风险因素，应作为筛查的核心指标。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 生活习惯 -->
+    <div class="card">
+        <h3>四、生活习惯分析</h3>
+        <div class="card-row cols-2">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda05 }}"></div>
+            <div>
+                <div class="analysis">
+                    <p><b>吸烟：</b>吸烟人群患病率高于不吸烟人群。烟草中的尼古丁会损伤胰岛β细胞功能，降低胰岛素敏感性，长期吸烟者患2型糖尿病的风险增加 <span class="highlight">30%-40%</span>。</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-row cols-2" style="margin-top:18px;">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda06 }}"></div>
+            <div>
+                <div class="analysis">
+                    <p><b>体育活动：</b>不运动人群的患病率显著高于运动人群，差距约 <span class="highlight">8-10个百分点</span>。运动能直接改善胰岛素敏感性，促进葡萄糖利用，是预防2型糖尿病最有效的生活方式干预手段之一。</p>
+                    <p><b>建议：</b>每周至少150分钟中等强度有氧运动（如快走、游泳）。</p>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:18px;">
+            <img class="chart-img" src="data:image/png;base64,{{ charts.eda07 }}">
+            <div class="analysis" style="margin-top:10px;">
+                <p><b>蔬果摄入：</b>水果和蔬菜摄入对患病率的影响相对较小，但不摄入蔬菜的人群患病率略高。充足的膳食纤维有助于延缓糖分吸收，建议每日摄入500g以上蔬菜。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交叉分析 -->
+    <div class="card">
+        <h3>五、多维度交叉分析</h3>
+        <div class="analysis">
+            <p>单因素分析只能反映单一变量的影响，但现实中美观是多因素叠加作用的结果。以下是三组关键的交叉分析：</p>
+        </div>
+        <div class="card-row cols-2">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda08 }}"></div>
+            <div>
+                <div class="analysis">
+                    <p><b>BMI + 高血压叠加效应：</b>这是本分析中发现的最强协同效应。非肥胖且无高血压人群患病率仅约 <span class="highlight">6%</span>，而肥胖且有高血压人群患病率飙升至 <span class="highlight">30%以上</span>，风险提升5倍。</p>
+                    <p><b>启示：</b>同时存在肥胖和高血压的人群应被列为最高优先级的筛查对象。</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-row cols-2" style="margin-top:18px;">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda09 }}"></div>
+            <div>
+                <div class="analysis">
+                    <p><b>高龄 + 吸烟叠加效应：</b>60岁以上且吸烟的人群患病率最高。年龄增长带来的胰岛功能退化，叠加吸烟对胰岛素敏感性的损害，形成"双重打击"。</p>
+                </div>
+            </div>
+        </div>
+        <div class="card-row cols-2" style="margin-top:18px;">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda10 }}"></div>
+            <div>
+                <div class="analysis">
+                    <p><b>运动 + 肥胖的保护效应：</b>即使在肥胖人群中，保持运动习惯也能将患病率降低约 <span class="highlight">5-8个百分点</span>。这说明运动的保护作用独立于体重因素，是值得推广的干预手段。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 相关性 -->
+    <div class="card">
+        <h3>六、全局相关性分析</h3>
+        <div class="card-row cols-2">
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda11 }}"></div>
+            <div><img class="chart-img" src="data:image/png;base64,{{ charts.eda12 }}"></div>
+        </div>
+        <div class="analysis" style="margin-top:15px;">
+            <p><b>Top5 相关特征：</b></p>
+            <ul>
+                <li><b>自评健康</b>（相关系数0.277）— 最强预测因子，患者的自我感知往往反映了综合健康状态</li>
+                <li><b>高血压</b>（0.254）— 与糖尿病共享胰岛素抵抗机制</li>
+                <li><b>BMI</b>（0.222）— 肥胖是2型糖尿病的核心危险因素</li>
+                <li><b>行走困难</b>（0.205）— 反映了整体健康衰退和活动能力下降</li>
+                <li><b>高胆固醇</b>（0.195）— 代谢综合征的重要组成部分</li>
+            </ul>
+            <p><b>建模指导：</b>以上5个特征应作为模型的核心输入变量，高血压、BMI、年龄等特征的权重应重点关注。</p>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== P3 模型对比 ==================== -->
+<div class="page" id="p3">
+    <div class="page-header"><h2>模型对比</h2></div>
+
+    <!-- 实验设计 -->
+    <div class="card">
+        <h3>一、实验设计</h3>
+        <div class="analysis">
+            <p>为保证对比公平性，所有模型严格遵循统一标准：</p>
+            <ul>
+                <li><b>随机种子</b>：random_state=42，全部模型一致，确保结果可复现</li>
+                <li><b>交叉验证</b>：5折分层交叉验证（StratifiedKFold），输出均值±标准差</li>
+                <li><b>评估指标</b>：准确率、精确率、召回率、F1值、AUC</li>
+                <li><b>重点关注</b>：召回率（避免漏诊）和 AUC（整体区分能力）</li>
+            </ul>
+            <p>7种模型覆盖了从传统统计方法到现代集成学习的完整技术栈：</p>
+        </div>
+    </div>
+
+    <!-- 结果表 -->
+    <div class="card">
+        <h3>二、测试集性能对比</h3>
+        <table class="dt">
+            <tr><th>模型</th><th>准确率</th><th>精确率</th><th>召回率</th><th>F1值</th><th>AUC</th></tr>
+            {% for row in exp_data.model_compare %}
+            <tr>
+                <td style="font-weight:600;">{{ row.get('模型','') }}</td>
+                <td>{{ "%.4f"|format(row.get('准确率',0)) }}</td>
+                <td>{{ "%.4f"|format(row.get('精确率',0)) }}</td>
+                <td>{{ "%.4f"|format(row.get('召回率',0)) }}</td>
+                <td>{{ "%.4f"|format(row.get('F1值',0)) }}</td>
+                <td>{{ "%.4f"|format(row.get('AUC',0)) }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <div class="analysis" style="margin-top:12px;">
+            <p><b>关键发现：</b></p>
+            <ul>
+                <li><b>CatBoost</b> 综合表现最优：AUC=0.8191，召回率=0.7932，F1=0.4548</li>
+                <li><b>GBDT系列</b>（XGBoost/LightGBM/CatBoost）整体优于传统模型，验证了"表格数据上树模型优于线性模型"的共识</li>
+                <li><b>逻辑回归</b>和<b>SVM</b>表现接近，作为线性模型基准</li>
+                <li><b>决策树</b>单棵树表现最弱，验证了集成学习的必要性</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 核心指标 -->
+    <div class="card">
+        <h3>三、核心指标可视化</h3>
+        <div class="chart-center"><img class="chart-img" src="data:image/png;base64,{{ charts.metrics }}"></div>
+        <div class="analysis" style="margin-top:10px;">
+            <p>从召回率角度看，CatBoost和LightGBM表现最佳，均超过0.78，意味着能识别出约80%的糖尿病患者。从AUC角度看，CatBoost以0.819领先，整体区分能力最强。</p>
+        </div>
+    </div>
+
+    <!-- ROC -->
+    <div class="card">
+        <h3>四、ROC 曲线对比</h3>
+        <div class="chart-center"><img class="chart-img" src="data:image/png;base64,{{ charts.roc }}"></div>
+        <div class="analysis" style="margin-top:10px;">
+            <p>ROC曲线越靠近左上角，模型性能越好。CatBoost曲线包围面积最大（AUC=0.819），在假正率较低时就能达到较高的真正率，说明其在控制误诊的同时能有效识别患者。</p>
+        </div>
+    </div>
+
+    <!-- PR -->
+    <div class="card">
+        <h3>五、PR 曲线对比</h3>
+        <div class="chart-center"><img class="chart-img" src="data:image/png;base64,{{ charts.pr }}"></div>
+        <div class="analysis" style="margin-top:10px;">
+            <p>在类别不平衡场景下，PR曲线比ROC更能真实反映模型在少数类（患病样本）上的识别能力。CatBoost的AP值（曲线下面积）最高，说明其在精确率和召回率之间取得了最好的平衡。</p>
+        </div>
+    </div>
+
+    <!-- 混淆矩阵 -->
+    <div class="card">
+        <h3>六、混淆矩阵</h3>
+        <div class="analysis">
+            <p>混淆矩阵直观展示了每个模型的预测分布。理想的模型应将大部分样本预测到对角线上（真阴性和真阳性）。以下展示6个主要模型的混淆矩阵：</p>
+        </div>
+        <div class="chart-grid">
+            <div><p class="sec-title" style="text-align:center;">逻辑回归</p><img class="chart-img" src="data:image/png;base64,{{ charts.cm_lr }}"></div>
+            <div><p class="sec-title" style="text-align:center;">随机森林</p><img class="chart-img" src="data:image/png;base64,{{ charts.cm_rf }}"></div>
+            <div><p class="sec-title" style="text-align:center;">XGBoost</p><img class="chart-img" src="data:image/png;base64,{{ charts.cm_xgb }}"></div>
+            <div><p class="sec-title" style="text-align:center;">LightGBM</p><img class="chart-img" src="data:image/png;base64,{{ charts.cm_lgb }}"></div>
+            <div><p class="sec-title" style="text-align:center;">CatBoost</p><img class="chart-img" src="data:image/png;base64,{{ charts.cm_cb }}"></div>
+            <div><p class="sec-title" style="text-align:center;">决策树</p><img class="chart-img" src="data:image/png;base64,{{ charts.cm_dt }}"></div>
+        </div>
+        <div class="analysis" style="margin-top:12px;">
+            <p>对比可见，CatBoost和LightGBM的假阴性（漏诊）数量最少，这对医疗筛查场景至关重要——宁可误报，不可漏诊。</p>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== P4 模型调优 ==================== -->
+<div class="page" id="p4">
+    <div class="page-header"><h2>模型调优</h2></div>
+
+    <!-- 不平衡 -->
+    <div class="card">
+        <h3>一、类别不平衡方案对比</h3>
+        <div class="analysis">
+            <p><b>问题：</b>糖尿病患者仅占15.29%，正负样本约1:6。基准模型的召回率仅0.1654，意味着漏诊了83%的患者，完全不可接受。</p>
+            <p><b>对比方案：</b></p>
+        </div>
+        <table class="dt">
+            <tr><th>方案</th><th>处理方式</th><th>召回率</th><th>AUC</th><th>F1值</th></tr>
+            {% for row in exp_data.imbalance %}
+            <tr>
+                <td style="font-weight:600;">{{ row.get('模型','') }}</td>
+                <td>{% if row.get('模型','') == '基准（原始）' %}直接使用原始训练集{% elif row.get('模型','') == '代价敏感学习' %}auto_class_weights=Balanced{% else %}SMOTE合成少数类{% endif %}</td>
+                <td>{{ "%.4f"|format(row.get('召回率',0)) }}</td>
+                <td>{{ "%.4f"|format(row.get('AUC',0)) }}</td>
+                <td>{{ "%.4f"|format(row.get('F1值',0)) }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <div class="analysis" style="margin-top:12px;">
+            <p><b>结论：</b>代价敏感学习效果最佳——召回率从0.1654飙升至 <span class="highlight">0.7932</span>，提升近5倍，且不改变原始数据分布，无信息损失。SMOTE虽然也有效，但人工合成样本可能引入噪声。</p>
+        </div>
+    </div>
+
+    <!-- 调参 -->
+    <div class="card">
+        <h3>二、CatBoost 专项调参</h3>
+        <div class="analysis">
+            <p><b>调参策略：</b>随机搜索20轮 × 3折交叉验证，优化目标为召回率（医疗场景优先不漏诊）。</p>
+            <p><b>搜索空间：</b>学习率、树深度、迭代轮数、L2正则化系数、样本采样比例。</p>
+        </div>
+        <table class="dt">
+            <tr><th>指标</th><th>调参前</th><th>调参后</th><th>提升</th></tr>
+            {% for row in exp_data.tune_compare %}
+            <tr>
+                <td style="font-weight:600;">{{ row.get('指标','') }}</td>
+                <td>{{ "%.4f"|format(row.get('调参前',0)) }}</td>
+                <td>{{ "%.4f"|format(row.get('调参后',0)) }}</td>
+                <td style="color:#16a34a;font-weight:600;">+{{ "%.4f"|format(row.get('提升',0)) }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <div class="analysis" style="margin-top:12px;">
+            <p><b>最优参数：</b></p>
+        </div>
+        <div style="background:#f8fafc;padding:14px;border-radius:6px;font-family:monospace;font-size:13px;margin-top:6px;">{{ best_params }}</div>
+        <div class="analysis" style="margin-top:10px;">
+            <p>调参后召回率提升至 <span class="highlight">0.7965</span>，AUC提升至 <span class="highlight">0.8192</span>。虽然提升幅度不大（基数已经较高），但每0.01的召回率提升都意味着少漏诊数百名患者。</p>
+        </div>
+    </div>
+
+    <!-- SHAP -->
+    <div class="card">
+        <h3>三、SHAP 可解释性分析</h3>
+        <div class="analysis">
+            <p><b>为什么需要可解释性：</b>医疗场景中，"为什么给出这个结论"比"结论是什么"更重要。SHAP（SHapley Additive exPlanations）基于博弈论，能精确计算每个特征对预测结果的边际贡献。</p>
+        </div>
+        <div class="card-row cols-2">
+            <div>
+                <p class="sec-title" style="text-align:center;">全局特征重要性</p>
+                <img class="chart-img" src="data:image/png;base64,{{ charts.shap_bar }}">
+            </div>
+            <div>
+                <p class="sec-title" style="text-align:center;">特征影响方向与强度</p>
+                <img class="chart-img" src="data:image/png;base64,{{ charts.shap_summary }}">
+                <div class="analysis" style="margin-top:10px;">
+                    <p><b>摘要图解读：</b>红色=特征取值高，蓝色=特征取值高。点越靠右，对"患病"预测的推动越强。</p>
+                    <ul>
+                        <li><b>GenHlth（自评健康）</b>：取值越高（健康越差），SHAP值越正，风险越高</li>
+                        <li><b>Age（年龄）</b>：年龄越大，风险越高</li>
+                        <li><b>BMI</b>：BMI越高，风险越高</li>
+                        <li><b>HighBP（高血压）</b>：有高血压显著推高风险</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:18px;max-width:650px;margin-left:auto;margin-right:auto;">
+            <p class="sec-title" style="text-align:center;">高风险样本单例解释</p>
+            <img class="chart-img" src="data:image/png;base64,{{ charts.shap_single }}">
+            <div class="analysis" style="margin-top:10px;">
+                <p><b>瀑布图解读：</b>从基础值出发，每个特征的SHAP值像"推力"一样将预测值向左（降低风险）或向右（增加风险）推动。最终输出该样本的个体化预测概率。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top5 -->
+    <div class="card">
+        <h3>四、核心风险因子与干预建议</h3>
+        <table class="dt">
+            <tr><th>排名</th><th>特征</th><th>业务含义</th><th>干预方向</th></tr>
+            <tr><td>1</td><td style="font-weight:600;">自评健康</td><td>自评越差，风险越高</td><td>健康教育，提升健康素养</td></tr>
+            <tr><td>2</td><td style="font-weight:600;">年龄</td><td>60岁以上风险激增</td><td>重点筛查60+人群</td></tr>
+            <tr><td>3</td><td style="font-weight:600;">BMI</td><td>BMI≥30风险翻倍</td><td>体重管理，控制BMI<25</td></tr>
+            <tr><td>4</td><td style="font-weight:600;">高血压</td><td>高血压与糖尿病互为因果</td><td>血压管理，定期监测</td></tr>
+            <tr><td>5</td><td style="font-weight:600;">高胆固醇</td><td>代谢综合征核心指标</td><td>低脂饮食，必要时药物干预</td></tr>
+        </table>
+        <div class="tip" style="margin-top:15px;">
+            <b>公共卫生建议：</b><br>
+            1. <b>重点筛查人群</b>：60岁以上、有高血压/心脏病史、BMI≥30的人群应优先纳入糖尿病筛查计划<br>
+            2. <b>生活方式干预</b>：鼓励每周150分钟中等强度运动，控制体重，戒烟限酒<br>
+            3. <b>医疗资源倾斜</b>：对高风险人群提供定期血糖检测，实现早发现早干预
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script>
+let sessionId = '';
+
+function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+
+function addChatRow(side, html) {
+    const chatArea = document.getElementById('chatArea');
+    const row = document.createElement('div');
+    row.className = side === 'left' ? 'chat-row-left' : 'chat-row-right';
+    row.innerHTML = html;
+    chatArea.appendChild(row);
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function showTyping() {
+    const chatArea = document.getElementById('chatArea');
+    const row = document.createElement('div');
+    row.className = 'chat-row-left';
+    row.id = 'typingIndicator';
+    row.innerHTML = '<div class="chat-avatar-left">🤖</div><div class="chat-bubble-left"><div class="chat-typing"><span></span><span></span><span></span></div></div>';
+    chatArea.appendChild(row);
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function hideTyping() {
+    const typing = document.getElementById('typingIndicator');
+    if (typing) typing.remove();
+}
+
+function predict() {
+    const features = ['HighBP','HighChol','CholCheck','BMI','Smoker','Stroke','HeartDiseaseorAttack','PhysActivity','Fruits','Veggies','HvyAlcoholConsump','AnyHealthcare','NoDocbcCost','GenHlth','MentHlth','PhysHlth','DiffWalk','Sex','Age','Education','Income'];
+    const data = {};
+    features.forEach(f => {
+        const el = document.getElementById(f);
+        data[f] = el.type === 'range' ? parseInt(el.value) : parseFloat(el.value);
+    });
+    data.session_id = sessionId;
+
+    addChatRow('right', '<div class="chat-bubble-right">计算风险</div><div class="chat-avatar-right">我</div>');
+    showTyping();
+
+    fetch('/predict', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) })
+    .then(r => r.json())
+    .then(res => {
+        hideTyping();
+        if (!res.success) {
+            addChatRow('left', '<div class="chat-avatar-left">🤖</div><div class="chat-bubble-left" style="color:#dc2626;">预测失败：' + res.error + '</div>');
+            return;
+        }
+
+        sessionId = res.session_id;
+        const pct = (res.probability * 100).toFixed(1);
+        const advBg = res.risk_level === '低风险' ? '#f0fdf4' : res.risk_level === '中风险' ? '#fffbeb' : '#fef2f2';
+        const advColor = res.risk_level === '低风险' ? '#166534' : res.risk_level === '中风险' ? '#92400e' : '#991b1b';
+
+        addChatRow('left', `
+            <div class="chat-avatar-left">🤖</div>
+            <div class="chat-result-card">
+                <div style="font-weight:600;color:#1a3c5e;margin-bottom:6px;">📊 风险评估结果</div>
+                <div class="cr-bar"><div class="cr-fill" style="width:${pct}%;background:${res.risk_color};"></div></div>
+                <div class="cr-prob" style="color:${res.risk_color};">${pct}%</div>
+                <div style="text-align:center;"><span class="cr-tag" style="background:${res.risk_color};">${res.risk_level}</span></div>
+                <div class="cr-advice" style="background:${advBg};color:${advColor};">${res.advice}</div>
+            </div>`);
+
+        // 提示用户可以提问
+        setTimeout(() => {
+            addChatRow('left', '<div class="chat-avatar-left">🤖</div><div class="chat-bubble-left">评估完成！您可以向我提问，比如"我应该注意什么饮食"、"需要做什么运动"等。</div>');
+        }, 500);
+    })
+    .catch(err => {
+        hideTyping();
+        addChatRow('left', '<div class="chat-avatar-left">🤖</div><div class="chat-bubble-left" style="color:#dc2626;">请求失败：' + err + '</div>');
+    });
+}
+
+function sendChat() {
+    const input = document.getElementById('chatInput');
+    const msg = input.value.trim();
+    if (!msg) return;
+    input.value = '';
+
+    addChatRow('right', `<div class="chat-bubble-right">${msg}</div><div class="chat-avatar-right">我</div>`);
+    showTyping();
+
+    fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: msg, session_id: sessionId })
+    })
+    .then(r => r.json())
+    .then(res => {
+        hideTyping();
+        if (!res.success) {
+            addChatRow('left', '<div class="chat-avatar-left">🤖</div><div class="chat-bubble-left" style="color:#dc2626;">回复失败：' + res.error + '</div>');
+            return;
+        }
+        addChatRow('left', `<div class="chat-avatar-left">🤖</div><div class="chat-bubble-left">${res.response}</div>`);
+    })
+    .catch(err => {
+        hideTyping();
+        addChatRow('left', '<div class="chat-avatar-left">🤖</div><div class="chat-bubble-left" style="color:#dc2626;">请求失败：' + err + '</div>');
+    });
+}
+</script>
+
+</body>
+</html>
