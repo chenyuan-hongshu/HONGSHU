@@ -6,7 +6,7 @@
 
 ```bash
 # 1. 安装依赖
-pip install flask pandas numpy scikit-learn catboost shap matplotlib torch transformers accelerate
+pip install -r requirements.txt
 
 # 2. 启动Web系统（最优模型已包含，可直接运行）
 cd 可视化
