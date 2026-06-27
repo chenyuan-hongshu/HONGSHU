@@ -8,16 +8,18 @@
 # 1. 安装依赖
 pip install flask pandas numpy scikit-learn catboost shap matplotlib torch transformers accelerate
 
-# 2. 依次运行脚本生成模型和数据
-python 数据加载与预处理.py
-python 探索性数据分析.py
-python 模型训练.py
-python 模型调优.py
-
-# 3. 启动Web系统
+# 2. 启动Web系统（最优模型已包含，可直接运行）
 cd 可视化
 python app.py
 ```
+
+> 如需重新训练模型或查看完整实验过程，可依次运行：
+> ```bash
+> python 数据加载与预处理.py
+> python 探索性数据分析.py
+> python 模型训练.py
+> python 模型调优.py
+> ```
 
 浏览器打开 http://localhost:5000
 
