@@ -34,10 +34,8 @@ python app.py
 ├── 原始数据集/              # BRFSS 2015原始数据
 ├── output/                  # 模型文件、图表、评估结果
 ├── 可视化/                  # Flask Web应用
-│   ├── app.py
-│   └── templates/index.html
-└── 提交材料/                # 实验报告、数据说明文档
-```
+   ├── app.py
+   └── templates/index.html
 
 ## 功能模块
 
